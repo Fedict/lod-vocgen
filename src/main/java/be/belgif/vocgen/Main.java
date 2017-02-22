@@ -109,17 +109,27 @@ public class Main {
 	}
 		
 	/**
-	 * Capitalize and transform string to a valid constant.
-	 * Used for RDF4J
+	 * Capitalize and transform string to a valid constant for RDF4J
 	 * 
 	 * @param s name of the class / property
 	 * @return normalized string
 	 */
-	private static String capitalize(String s) {
+	private static String rdf4jConstants(String s) {
 		return s.replaceFirst("^_", "")
 				.replaceAll("-", "_")
 				.replaceAll("([a-z]+)([A-Z])", "$1_$2")
 				.toUpperCase();
+	}
+
+	/**
+	 * Capitalize and transform string to a valid constant for Jena
+	 * 
+	 * @param s name of the class / property
+	 * @return normalized string
+	 */
+	private static String jenaConstants(String s) {
+		return s.replaceFirst("^_", "")
+				.replaceAll("-", "_");
 	}
 	
 	/**
@@ -135,6 +145,66 @@ public class Main {
 						.filter(c -> !(c instanceof BNode))
 						.map(c -> c.stringValue().replaceFirst(base, ""))
 						.collect(Collectors.toSet());		
+	}
+				
+	/**
+	 * Get a local (without namespace) class names mapped to constants for RDF4J 
+	 * 
+	 * @param m RDF Model
+	 * @param base namespace URI as string
+	 * @return map with class names and constants
+	 */
+	private static SortedMap<String,String> getRdf4jClasses(Model m, String base) { 
+		SortedMap<String,String> classes = new TreeMap();
+		getClasses(m, base).forEach(c -> classes.put(c, rdf4jConstants(c)));
+		return classes;
+	}
+
+	/**
+	 * Get a local (without namespace) properties mapped to constants for RDF4J 
+	 * 
+	 * @param m RDF Model
+	 * @param base namespace URI as string
+	 * @param classes 
+	 * @return map with properties and constants
+	 */
+	private static SortedMap<String,String> getRdf4jProps(Model m, String base, 
+															SortedMap<String,String>  classes) { 
+		SortedMap<String,String> props = new TreeMap();
+		getProps(m, base).forEach(p -> { 
+					String cte = rdf4jConstants(p);
+					String key = classes.containsValue(cte) ? cte + "_PROP" : cte;
+					props.put(p, key); 
+		});
+		return props;
+	}
+	
+	/**
+	 * Get a local (without namespace) class names mapped to constants for Jena 
+	 * 
+	 * @param m RDF Model
+	 * @param base namespace URI as string
+	 * @return map with class names and constants
+	 */
+	private static SortedMap<String,String> getJenaClasses(Model m, String base) { 
+		SortedMap<String,String> classes = new TreeMap();
+		getClasses(m, base).forEach(c -> classes.put(c, c));
+		return classes;
+	}
+
+	/**
+	 * Get a local (without namespace) properties mapped to constants for Jena
+	 * 
+	 * @param m RDF Model
+	 * @param base namespace URI as string
+	 * @param classes 
+	 * @return map with properties and constants
+	 */
+	private static SortedMap<String,String> getJenaProps(Model m, String base, 
+															SortedMap<String,String>  classes) { 
+		SortedMap<String,String> props = new TreeMap();
+		getProps(m, base).forEach(p -> props.put(p, jenaConstants(p)));
+		return props;
 	}
 	
 	/**
@@ -218,6 +288,46 @@ public class Main {
 	}
 	
 	/**
+	 * Write java class for RDF4J
+	 * 
+	 * @param cfg freemarker configuration
+	 * @param m model
+	 * @param base namespace URI as string
+	 * @param root template data
+	 * @throws IOException
+	 * @throws TemplateException
+	 */
+	private static void writeRdf4j(Configuration cfg, Model m, String base, Map root) 
+													throws IOException, TemplateException { 
+		SortedMap<String,String> classes = getRdf4jClasses(m, base);
+		SortedMap<String,String> props = getRdf4jProps(m, base, classes);
+		
+		root.put("classMap", classes);
+		root.put("propMap", props);
+		source(cfg, "rdf4j", root);
+	}
+
+	/**
+	 * Write java class for Jena
+	 * 
+	 * @param cfg freemarker configuration
+	 * @param m model
+	 * @param base namespace URI as string
+	 * @param root template data
+	 * @throws IOException
+	 * @throws TemplateException
+	 */
+	private static void writeJena(Configuration cfg, Model m, String base, Map root) 
+													throws IOException, TemplateException { 
+		SortedMap<String,String> classes = getJenaClasses(m, base);
+		SortedMap<String,String> props = getJenaProps(m, base, classes);
+		
+		root.put("classMap", classes);
+		root.put("propMap", props);
+		source(cfg, "jena", root);
+	}
+	
+	/**
 	 * Main
 	 * 
 	 * @param args 
@@ -241,30 +351,16 @@ public class Main {
 		
 		Model m = getModel(owl, base);
 		
-		// Classed and properties
-		SortedMap<String,String> classes = new TreeMap();
-		getClasses(m, base).forEach(c -> classes.put(c, capitalize(c)));
-		
-		SortedMap<String,String> props = new TreeMap();
-		getProps(m, base).forEach(p -> { String cte = capitalize(p);
-										 String key = classes.containsValue(cte) ? cte + "_PROP" 
-																				: cte;
-										 props.put(p, key); });
-		
 		Set<String> deprecated = getDeprecated(m, base);
 
 		// Template
 		Configuration cfg = getConfig();
-		
+	
 		Map root = getData(cmd);
-
 		root.put("nsURL", base);
 		root.put("depr", deprecated);
-		root.put("classMap", classes);
-		root.put("propMap", props);
 		
-		// Load templates
-		source(cfg, "rdf4j", root);
-		source(cfg, "jena", root);
+		writeRdf4j(cfg, m, base, root);
+		writeJena(cfg, m, base, root);
 	}
 }
