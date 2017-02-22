@@ -26,7 +26,6 @@
 package be.belgif.vocgen;
 
 import freemarker.template.Configuration;
-import freemarker.template.MalformedTemplateNameException;
 import freemarker.template.Template;
 import freemarker.template.TemplateException;
 import freemarker.template.TemplateExceptionHandler;
@@ -43,6 +42,14 @@ import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
+
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.Option;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
 import org.eclipse.rdf4j.model.BNode;
 
 import org.eclipse.rdf4j.model.IRI;
@@ -62,7 +69,48 @@ import org.eclipse.rdf4j.rio.Rio;
  */
 public class Main {
 	/**
-	 * Capitalize and transform string to valid constant
+	 * Option builder
+	 * 
+	 * @param c short option name
+	 * @param s long option name
+	 * @param desc description
+	 * @return option
+	 */
+	private static Option opt(String c, String s, String desc) {
+		return Option.builder(c).longOpt(s).required().hasArg().desc(desc).build();
+	}
+	
+	/**
+	 * Command line options
+	 */
+	private static final Options OPTS = new Options()
+			.addOption(opt("f", "file", "OWL vocabulary file in TTL format"))
+			.addOption(opt("a", "author", "Name of the author"))
+			.addOption(opt("n", "ns", "Namespace URL"))
+			.addOption(opt("s", "short", "Short name"))
+			.addOption(opt("l", "long", "Long name"))
+			.addOption(opt("p", "prefix", "Namespace prefix"))
+			.addOption(opt("u", "url", "Documentation URL"));
+
+	/**
+	 * Get data for template from command line
+	 * 
+	 * @param cmd command line
+	 * @return map with common data
+	 */
+	private static Map getData(CommandLine cmd) {
+		Map m = new HashMap();
+		m.put("author", cmd.getOptionValue('a'));
+		m.put("fullname", cmd.getOptionValue('l'));
+		m.put("url", cmd.getOptionValue('u'));
+		m.put("nsAlias", cmd.getOptionValue('s'));
+		m.put("prefix", cmd.getOptionValue('p'));
+		return m;
+	}
+		
+	/**
+	 * Capitalize and transform string to a valid constant.
+	 * Used for RDF4J
 	 * 
 	 * @param s name of the class / property
 	 * @return normalized string
@@ -176,18 +224,20 @@ public class Main {
 	 * @throws java.io.IOException 
 	 * @throws freemarker.template.TemplateException 
 	 */
-	public static void main(String[] args) throws IOException, TemplateException {
-		if (args.length < 6) {
-			System.err.println("Usage: VocabGen"
-					+ " <vocab.ttl> <nsURL> <nsPrefix> <nsAlias> <docURL> <fullname>");
-		}
+	public static void main(String[] args) throws IOException, TemplateException {	
+		CommandLine cmd = null;
 		
-		String owl = args[0]; // OWL input file in TTL
-		String base = args[1]; // namespace URI
-		String prefix = args[2]; // without ":", e.g. vcard
-		String alias = args[3]; // eg VCARD4
-		String doc = args[4]; // URL with human readable docs
-		String fullname = args[5]; // full name of the ontology
+		try {
+			CommandLineParser parser = new DefaultParser();
+			cmd = parser.parse(OPTS, args);
+		} catch (ParseException ex) {
+			HelpFormatter help = new HelpFormatter();
+			help.printHelp("VocabGen", OPTS);
+			System.exit(-1);
+		}
+	 
+		String owl = cmd.getOptionValue('f');
+		String base = cmd.getOptionValue('n'); // namespace URI
 		
 		Model m = getModel(owl, base);
 		
@@ -203,21 +253,17 @@ public class Main {
 		
 		Set<String> deprecated = getDeprecated(m, base);
 
+		// Template
 		Configuration cfg = getConfig();
-				
-		// Pass data to template
-		Map root = new HashMap();
-		root.put("fullname", fullname);
-		root.put("url", doc);
+		
+		Map root = getData(cmd);
+
 		root.put("nsURL", base);
-		root.put("prefix", prefix);
-		root.put("nsAlias", alias);
-		root.put("author", "Bart Hanssens");
 		root.put("depr", deprecated);
 		root.put("classMap", classes);
 		root.put("propMap", props);
 		
-		// Load template
+		// Load templates
 		source(cfg, "rdf4j", root);
 		source(cfg, "jena", root);
 	}
