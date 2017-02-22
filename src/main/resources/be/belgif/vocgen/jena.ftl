@@ -55,7 +55,6 @@ public class ${nsAlias} {
 
     // Properties
     <#list propMap as prop, const>
-    /** ${prefix}:${prop} */
     <#if depr?seq_contains(prop)>
     @Deprecated
     </#if>
