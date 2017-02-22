@@ -196,7 +196,10 @@ public class Main {
 		getClasses(m, base).forEach(c -> classes.put(c, capitalize(c)));
 		
 		SortedMap<String,String> props = new TreeMap();
-		getProps(m, base).forEach(p -> props.put(p, capitalize(p)));
+		getProps(m, base).forEach(p -> { String cte = capitalize(p);
+										 String key = classes.containsValue(cte) ? cte + "_PROP" 
+																				: cte;
+										 props.put(p, key); });
 		
 		Set<String> deprecated = getDeprecated(m, base);
 
