@@ -50,7 +50,7 @@ public class ${nsAlias} {
     <#if depr?seq_contains(class)>
     @Deprecated
     </#if>
-    public static final Resource ${const} = m.createResource(NS + ${class});
+    public static final Resource ${const} = m.createResource(NS + "${class}");
     </#list>
 
     // Properties
@@ -59,6 +59,6 @@ public class ${nsAlias} {
     <#if depr?seq_contains(prop)>
     @Deprecated
     </#if>
-    public static final Properrty ${const} = m.createResource(NS + ${prop});
+    public static final Properrty ${const} = m.createResource(NS + "${prop}");
     </#list>
 }
