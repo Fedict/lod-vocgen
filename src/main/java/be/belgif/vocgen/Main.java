@@ -26,6 +26,7 @@
 package be.belgif.vocgen;
 
 import freemarker.template.Configuration;
+import freemarker.template.MalformedTemplateNameException;
 import freemarker.template.Template;
 import freemarker.template.TemplateException;
 import freemarker.template.TemplateExceptionHandler;
@@ -139,6 +140,22 @@ public class Main {
 	}
 	
 	/**
+	 * Write output for Rdf4J or Jena
+	 * 
+	 * @param cfg freemarker configuration
+	 * @param proj project: jena or rdf4j
+	 * @param map template data
+	 * @throws IOException
+	 * @throws TemplateException
+	 */
+	private static void source(Configuration cfg, String proj, Map map) throws IOException, TemplateException {
+		Template ftl = cfg.getTemplate(proj + ".ftl");
+		try (Writer out = new FileWriter( proj + ".java")) {
+			ftl.process(map, out);
+		}
+	}
+	
+	/**
 	 * Get Freemarker configuration.
 	 * 
 	 * @return freemarker configuration 
@@ -183,10 +200,8 @@ public class Main {
 		
 		Set<String> deprecated = getDeprecated(m, base);
 
-		// Load template
 		Configuration cfg = getConfig();
-		Template rdf4j = cfg.getTemplate("rdf4j.ftl");
-		
+				
 		// Pass data to template
 		Map root = new HashMap();
 		root.put("fullname", fullname);
@@ -199,8 +214,8 @@ public class Main {
 		root.put("classMap", classes);
 		root.put("propMap", props);
 		
-		try (Writer out = new FileWriter("rdf4j.java")) {
-			rdf4j.process(root, out);
-		}
+		// Load template
+		source(cfg, "rdf4j", root);
+		source(cfg, "jena", root);
 	}
 }
