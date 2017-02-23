@@ -58,6 +58,6 @@ public class ${nsAlias} {
     <#if depr?seq_contains(prop)>
     @Deprecated
     </#if>
-    public static final Property ${const} = m.createResource(NS + "${prop}");
+    public static final Property ${const} = m.createProperty(NS + "${prop}");
     </#list>
 }

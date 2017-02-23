@@ -128,6 +128,9 @@ public class Main {
 	 * @return normalized string
 	 */
 	private static String jenaConstants(String s) {
+		if (s.equals("class")) {
+			return "class_prop";
+		}
 		return s.replaceFirst("^_", "")
 				.replaceAll("-", "_");
 	}
