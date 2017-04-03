@@ -103,7 +103,7 @@ public class Main {
 		Map m = new HashMap();
 		m.put("author", cmd.getOptionValue('a'));
 		m.put("fullname", cmd.getOptionValue('l'));
-		m.put("url", cmd.getOptionValue('u'));
+		m.put("url", cmd.getOptionValue('d'));
 		m.put("nsAlias", cmd.getOptionValue('s'));
 		m.put("prefix", cmd.getOptionValue('p'));
 		return m;
