@@ -85,12 +85,13 @@ public class Main {
 	 */
 	private static final Options OPTS = new Options()
 			.addOption(opt("f", "file", "OWL vocabulary file in TTL format"))
-			.addOption(opt("a", "author", "Name of the author"))
+			.addOption(opt("d", "doc", "Documentation URL"))
+			.addOption(opt("a", "author", "Name of the java class author"))
 			.addOption(opt("n", "ns", "Namespace URL"))
-			.addOption(opt("s", "short", "Short name"))
-			.addOption(opt("l", "long", "Long name"))
-			.addOption(opt("p", "prefix", "Namespace prefix"))
-			.addOption(opt("u", "url", "Documentation URL"));
+			.addOption(opt("s", "short", "Short vocabulary name"))
+			.addOption(opt("l", "long", "Long vocabulary name"))
+			.addOption(opt("p", "prefix", "Namespace prefix"));
+
 
 	/**
 	 * Get data for template from command line
@@ -151,7 +152,7 @@ public class Main {
 	}
 				
 	/**
-	 * Get a local (without namespace) class names mapped to constants for RDF4J 
+	 * Get local (without namespace) class names mapped to constants for RDF4J 
 	 * 
 	 * @param m RDF Model
 	 * @param base namespace URI as string
@@ -164,7 +165,7 @@ public class Main {
 	}
 
 	/**
-	 * Get a local (without namespace) properties mapped to constants for RDF4J 
+	 * Get local (without namespace) properties mapped to constants for RDF4J 
 	 * 
 	 * @param m RDF Model
 	 * @param base namespace URI as string
@@ -183,7 +184,7 @@ public class Main {
 	}
 	
 	/**
-	 * Get a local (without namespace) class names mapped to constants for Jena 
+	 * Get local (without namespace) class names mapped to constants for Jena 
 	 * 
 	 * @param m RDF Model
 	 * @param base namespace URI as string
@@ -196,7 +197,7 @@ public class Main {
 	}
 
 	/**
-	 * Get a local (without namespace) properties mapped to constants for Jena
+	 * Get local (without namespace) properties mapped to constants for Jena
 	 * 
 	 * @param m RDF Model
 	 * @param base namespace URI as string
