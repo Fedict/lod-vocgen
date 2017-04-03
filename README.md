@@ -9,7 +9,7 @@ so this tool can be used to generate Java helper classes using an existing OWL f
 
   * RDF4j uses all-uppercase in constants (in line with Java best practices), 
 Jena uses a mixture of lower/uppercase (following the case in the vocabularies).
-  * Most RDF4j classes include the name of the author, while Jena discourages it. 
+  * Most RDF4j classes include the name of the author of the java file, while Jena discourages it. 
 
 ## Example
 
