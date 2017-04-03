@@ -59,6 +59,7 @@ import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.vocabulary.OWL;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
+import org.eclipse.rdf4j.model.vocabulary.RDFS;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.rio.Rio;
 
@@ -145,6 +146,14 @@ public class Main {
 	 */
 	private static Set<String> getClasses(Model m, String base) {
 		Set<Resource> owlClasses = m.filter(null, RDF.TYPE, OWL.CLASS).subjects();
+		if (owlClasses.isEmpty()) {
+			owlClasses = m.filter(null, RDF.TYPE, RDFS.CLASS).subjects();
+		}
+		// check for subclasses derived from other classes in this ontology
+		owlClasses.addAll(owlClasses.stream()
+				.flatMap(s -> m.filter(null, RDF.TYPE, s).subjects().stream())
+				.collect(Collectors.toSet()));
+	
 		return owlClasses.stream()
 						.filter(c -> !(c instanceof BNode))
 						.map(c -> c.stringValue().replaceFirst(base, ""))
@@ -221,8 +230,16 @@ public class Main {
 	private static Set<String> getProps(Model m, String base) {
 		Set<Resource> owlProps = m.filter(null, RDF.TYPE, OWL.OBJECTPROPERTY).subjects();
 		owlProps.addAll(m.filter(null, RDF.TYPE, OWL.DATATYPEPROPERTY).subjects());
+		if (owlProps.isEmpty()) {
+			owlProps = m.filter(null, RDF.TYPE, RDF.PROPERTY).subjects();
+		}
+		// check for subproperties derived from other properties in this ontology
+		owlProps.addAll(owlProps.stream()
+				.flatMap(s -> m.filter(null, RDF.TYPE, s).subjects().stream())
+				.collect(Collectors.toSet()));
+	
 		return owlProps.stream()
-						.map(p ->  p.stringValue().replaceFirst(base, ""))
+						.map(p -> p.stringValue().replaceFirst(base, ""))
 						.collect(Collectors.toSet());
 	}
 	

@@ -14,7 +14,7 @@ Jena uses a mixture of lower/uppercase (following the case in the vocabularies).
 ## Example
 
 ```
-java -jar vocgen --file <local_vocab_owl.ttl> --doc <vocab_human_doc_url>
+java -jar vocgen.jar --file <local_vocab_owl.ttl> --doc <vocab_human_doc_url>
 	--ns <namespace_uri> --prefix <preferred_prefix>
 	--short <short_vocabulary_name> --long <long_vocabulary_name>
 	--author <name_java_author>
