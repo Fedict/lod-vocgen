@@ -117,6 +117,10 @@ public class Main {
 	 * @return normalized string
 	 */
 	private static String rdf4jConstants(String s) {
+		// namespace and prefix are already used in RDF4J vocabulary class
+		if (s.equals("namespace") || s.equals("prefix")) {
+			return s.toUpperCase() + "_PROP";
+		}
 		return s.replaceFirst("^_", "")
 				.replaceAll("-", "_")
 				.replaceAll("([a-z]+)([A-Z])", "$1_$2")
