@@ -153,7 +153,8 @@ public class Main {
 		owlClasses.addAll(owlClasses.stream()
 				.flatMap(s -> m.filter(null, RDF.TYPE, s).subjects().stream())
 				.collect(Collectors.toSet()));
-	
+		
+		// discard blank nodes and return class names (without prefix)
 		return owlClasses.stream()
 						.filter(c -> !(c instanceof BNode))
 						.map(c -> c.stringValue().replaceFirst(base, ""))
@@ -184,6 +185,7 @@ public class Main {
 	private static SortedMap<String,String> getRdf4jProps(Model m, String base, 
 															SortedMap<String,String>  classes) { 
 		SortedMap<String,String> props = new TreeMap();
+		// prevent duplicates when uppercasing property "name" and class "Name" to NAME
 		getProps(m, base).forEach(p -> { 
 					String cte = rdf4jConstants(p);
 					String key = classes.containsValue(cte) ? cte + "_PROP" : cte;
