@@ -59,7 +59,7 @@ public class ${nsAlias} {
 
 	// Individuals
 	<#list indMap as ind, const>
-	/** ${prefix}:${prop} */
+	/** ${prefix}:${ind} */
 	<#if depr?seq_contains(ind)>
 	@Deprecated
 	</#if>

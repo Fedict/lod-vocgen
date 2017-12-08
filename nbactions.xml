@@ -10,9 +10,9 @@
                 <goal>org.codehaus.mojo:exec-maven-plugin:1.2.1:exec</goal>
             </goals>
             <properties>
-                <exec.args>-classpath %classpath be.belgif.vocgen.Main -f shacl.ttl -n http://www.w3.org/ns/shacl# -p sh  -d https://www.w3.org/TR/2017/WD-shacl-20170303/  -s "SHACL" -l "Shapes Constraint Language" -a "Bart Hanssens"</exec.args>
+                <exec.args>-classpath %classpath be.belgif.vocgen.Main -f ldp.ttl -n http://www.w3.org/ns/ldp# -p ldp  -d https://www.w3.org/TR/ldp/  -s "LDP" -l "Linked Data Platform" -a "Bart Hanssens"</exec.args>
                 <exec.executable>java</exec.executable>
-                <exec.workingdir>C:\Data\vocabgen</exec.workingdir>
+                <exec.workingdir>/home/bart/Desktop</exec.workingdir>
             </properties>
         </action>
         <action>
@@ -25,10 +25,10 @@
                 <goal>org.codehaus.mojo:exec-maven-plugin:1.2.1:exec</goal>
             </goals>
             <properties>
-                <exec.args>-Xdebug -Xrunjdwp:transport=dt_socket,server=n,address=${jpda.address} -classpath %classpath be.belgif.vocgen.Main -f shacl.ttl -n http://www.w3.org/ns/shacl# -p sh  -d https://www.w3.org/TR/2017/WD-shacl-20170303/  -s "SHACL" -l "Shapes Constraint Language" -a "Bart Hanssens"</exec.args>
+                <exec.args>-Xdebug -Xrunjdwp:transport=dt_socket,server=n,address=${jpda.address} -classpath %classpath be.belgif.vocgen.Main -f ldp.ttl -n http://www.w3.org/ns/ldp# -p ldp  -d https://www.w3.org/TR/ldp/  -s "LDP" -l "Linked Data Platform" -a "Bart Hanssens"</exec.args>
                 <exec.executable>java</exec.executable>
                 <jpda.listen>true</jpda.listen>
-                <exec.workingdir>C:\Data\vocabgen</exec.workingdir>
+                <exec.workingdir>/home/bart/Desktop</exec.workingdir>
             </properties>
         </action>
         <action>
@@ -41,9 +41,9 @@
                 <goal>org.codehaus.mojo:exec-maven-plugin:1.2.1:exec</goal>
             </goals>
             <properties>
-                <exec.args>-classpath %classpath be.belgif.vocgen.Main -f shacl.ttl -n http://www.w3.org/ns/shacl# -p sh  -d https://www.w3.org/TR/2017/WD-shacl-20170303/  -s "SHACL" -l "Shapes Constraint Language" -a "Bart Hanssens"</exec.args>
+                <exec.args>-classpath %classpath be.belgif.vocgen.Main -f ldp.ttl -n http://www.w3.org/ns/ldp# -p ldp  -d https://www.w3.org/TR/ldp/  -s "LDP" -l "Linked Data Platform" -a "Bart Hanssens"</exec.args>
                 <exec.executable>java</exec.executable>
-                <exec.workingdir>C:\Data\vocabgen</exec.workingdir>
+                <exec.workingdir>/home/bart/Desktop</exec.workingdir>
             </properties>
         </action>
     </actions>
