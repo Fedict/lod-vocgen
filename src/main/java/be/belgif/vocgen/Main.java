@@ -164,7 +164,44 @@ public class Main {
 						.map(c -> c.stringValue().replaceFirst(base, ""))
 						.collect(Collectors.toSet());		
 	}
-				
+
+	/**
+	 * Get a set of local (without namespace) properties
+	 * 
+	 * @param m RDF Model
+	 * @param base namespace URI as string
+	 * @return set of local property names
+	 */
+	private static Set<String> getProps(Model m, String base) {
+		Set<Resource> owlProps = m.filter(null, RDF.TYPE, OWL.OBJECTPROPERTY).subjects();
+		owlProps.addAll(m.filter(null, RDF.TYPE, OWL.DATATYPEPROPERTY).subjects());
+		if (owlProps.isEmpty()) {
+			owlProps = m.filter(null, RDF.TYPE, RDF.PROPERTY).subjects();
+		}
+		// check for subproperties derived from other properties in this ontology
+		owlProps.addAll(owlProps.stream()
+				.flatMap(s -> m.filter(null, RDF.TYPE, s).subjects().stream())
+				.collect(Collectors.toSet()));
+	
+		return owlProps.stream()
+						.map(p -> p.stringValue().replaceFirst(base, ""))
+						.collect(Collectors.toSet());
+	}
+
+	/**
+	 * Get a set of local (without namespace) individuals
+	 * 
+	 * @param m RDF Model
+	 * @param base namespace URI as string
+	 * @return set of local individuals
+	 */
+	private static Set<String> getIndividuals(Model m, String base) {
+		Set<Resource> owlInds = m.filter(null, RDF.TYPE, OWL.INDIVIDUAL).subjects();
+		return owlInds.stream()
+						.map(i -> i.stringValue().replaceFirst(base, ""))
+						.collect(Collectors.toSet());
+	}
+	
 	/**
 	 * Get local (without namespace) class names mapped to constants for RDF4J 
 	 * 
@@ -199,6 +236,26 @@ public class Main {
 	}
 	
 	/**
+	 * Get local (without namespace) individuals mapped to constants for RDF4J 
+	 * 
+	 * @param m RDF Model
+	 * @param base namespace URI as string
+	 * @param classes 
+	 * @return map with individuals and constants
+	 */
+	private static SortedMap<String,String> getRdf4jIndividuals(Model m, String base, 
+															SortedMap<String,String> classes) { 
+		SortedMap<String,String> inds = new TreeMap();
+		// prevent duplicates when uppercasing individual "name" and class "Name" to NAME
+		getIndividuals(m, base).forEach(i -> { 
+					String cte = rdf4jConstants(i);
+					String key = classes.containsValue(cte) ? cte + "_IND" : cte;
+					inds.put(i, key); 
+		});
+		return inds;
+	}
+	
+	/**
 	 * Get local (without namespace) class names mapped to constants for Jena 
 	 * 
 	 * @param m RDF Model
@@ -216,37 +273,25 @@ public class Main {
 	 * 
 	 * @param m RDF Model
 	 * @param base namespace URI as string
-	 * @param classes 
 	 * @return map with properties and constants
 	 */
-	private static SortedMap<String,String> getJenaProps(Model m, String base, 
-															SortedMap<String,String>  classes) { 
+	private static SortedMap<String,String> getJenaProps(Model m, String base) { 
 		SortedMap<String,String> props = new TreeMap();
 		getProps(m, base).forEach(p -> props.put(p, jenaConstants(p)));
 		return props;
 	}
 	
 	/**
-	 * Get a set of local (without namespace) propertues
+	 * Get local (without namespace) individuals mapped to constants for Jena
 	 * 
 	 * @param m RDF Model
 	 * @param base namespace URI as string
-	 * @return set of local property names
+	 * @return map with individuals and constants
 	 */
-	private static Set<String> getProps(Model m, String base) {
-		Set<Resource> owlProps = m.filter(null, RDF.TYPE, OWL.OBJECTPROPERTY).subjects();
-		owlProps.addAll(m.filter(null, RDF.TYPE, OWL.DATATYPEPROPERTY).subjects());
-		if (owlProps.isEmpty()) {
-			owlProps = m.filter(null, RDF.TYPE, RDF.PROPERTY).subjects();
-		}
-		// check for subproperties derived from other properties in this ontology
-		owlProps.addAll(owlProps.stream()
-				.flatMap(s -> m.filter(null, RDF.TYPE, s).subjects().stream())
-				.collect(Collectors.toSet()));
-	
-		return owlProps.stream()
-						.map(p -> p.stringValue().replaceFirst(base, ""))
-						.collect(Collectors.toSet());
+	private static SortedMap<String,String> getJenaIndividuals(Model m, String base) { 
+		SortedMap<String,String> inds = new TreeMap();
+		getIndividuals(m, base).forEach(i -> inds.put(i, jenaConstants(i)));
+		return inds;
 	}
 	
 	/**
@@ -328,9 +373,11 @@ public class Main {
 													throws IOException, TemplateException { 
 		SortedMap<String,String> classes = getRdf4jClasses(m, base);
 		SortedMap<String,String> props = getRdf4jProps(m, base, classes);
-		
+		SortedMap<String,String> inds = getRdf4jIndividuals(m, base, classes);
+				
 		root.put("classMap", classes);
 		root.put("propMap", props);
+		root.put("indMap", inds);
 		source(cfg, "rdf4j", root);
 	}
 
@@ -347,10 +394,12 @@ public class Main {
 	private static void writeJena(Configuration cfg, Model m, String base, Map root) 
 													throws IOException, TemplateException { 
 		SortedMap<String,String> classes = getJenaClasses(m, base);
-		SortedMap<String,String> props = getJenaProps(m, base, classes);
+		SortedMap<String,String> props = getJenaProps(m, base);
+		SortedMap<String,String> inds = getJenaIndividuals(m, base);
 		
 		root.put("classMap", classes);
 		root.put("propMap", props);
+		root.put("indMap", inds);
 		source(cfg, "jena", root);
 	}
 	

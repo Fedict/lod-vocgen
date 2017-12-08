@@ -20,6 +20,7 @@ package org.apache.jena.vocabulary;
 
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
+import org.apache.jena.rdf.model.Individual;
 import org.apache.jena.rdf.model.Property;
 import org.apache.jena.rdf.model.Resource;
 
@@ -59,5 +60,13 @@ public class ${nsAlias} {
     @Deprecated
     </#if>
     public static final Property ${const} = m.createProperty(NS + "${prop}");
+    </#list>
+
+    // Individuals
+    <#list indMap as ind, const>
+    <#if depr?seq_contains(ind)>
+    @Deprecated
+    </#if>
+    public static final Individual ${ind} = m.createProperty(NS + "${ind}");
     </#list>
 }

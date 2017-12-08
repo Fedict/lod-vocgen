@@ -57,6 +57,16 @@ public class ${nsAlias} {
 
 	</#list>
 
+	// Individuals
+	<#list indMap as ind, const>
+	/** ${prefix}:${prop} */
+	<#if depr?seq_contains(ind)>
+	@Deprecated
+	</#if>
+	public static final IRI ${const};
+
+	</#list>
+
 	static {
 		ValueFactory factory = SimpleValueFactory.getInstance();
 
@@ -66,6 +76,10 @@ public class ${nsAlias} {
 
 		<#list propMap as prop, const>
 		${const} = factory.createIRI(NAMESPACE, "${prop}");
+		</#list>
+
+		<#list indMap as ind, const>
+		${const} = factory.createIRI(NAMESPACE, "${ind}");
 		</#list>
 	}
 }
