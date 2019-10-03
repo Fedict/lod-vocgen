@@ -60,6 +60,7 @@ import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.vocabulary.OWL;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.RDFS;
+import org.eclipse.rdf4j.model.vocabulary.SKOS;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.rio.Rio;
 
@@ -164,7 +165,7 @@ public class Main {
 						.map(c -> c.stringValue().replaceFirst(base, ""))
 						.collect(Collectors.toSet());		
 	}
-				
+
 	/**
 	 * Get local (without namespace) class names mapped to constants for RDF4J 
 	 * 
@@ -187,7 +188,7 @@ public class Main {
 	 * @return map with properties and constants
 	 */
 	private static SortedMap<String,String> getRdf4jProps(Model m, String base, 
-															SortedMap<String,String>  classes) { 
+															SortedMap<String,String> classes) { 
 		SortedMap<String,String> props = new TreeMap();
 		// prevent duplicates when uppercasing property "name" and class "Name" to NAME
 		getProps(m, base).forEach(p -> { 
@@ -196,6 +197,25 @@ public class Main {
 					props.put(p, key); 
 		});
 		return props;
+	}
+
+	/**
+	 * Get local (without namespace) individuals mapped to constants for RDF4J 
+	 * 
+	 * @param m RDF Model
+	 * @param base namespace URI as string
+	 * @return map with individuals
+	 */
+	private static SortedMap<String,String> getRdf4jIndivs(Model m, String base,
+			SortedMap<String,String> classes, SortedMap<String,String> props) { 
+		SortedMap<String,String> indivs = new TreeMap();
+		// prevent duplicates when uppercasing property "name" and class "Name" to NAME
+		getIndivs(m, base).forEach(p -> { 
+					String cte = rdf4jConstants(p);
+					String key = (classes.containsValue(cte) || props.containsValue(cte)) ? cte + "_INDIV" : cte;
+					indivs.put(p, key); 
+		});
+		return indivs;
 	}
 	
 	/**
@@ -248,7 +268,24 @@ public class Main {
 						.map(p -> p.stringValue().replaceFirst(base, ""))
 						.collect(Collectors.toSet());
 	}
-	
+
+	/**
+	 * Get a set of individuals (without namespace)
+	 * 
+	 * @param m RDF Model
+	 * @param base namespace URI as string
+	 */
+	private static Set<String> getIndivs(Model m, String base) {
+		Set<Resource> owlIndivs= m.filter(null, RDF.TYPE, OWL.NAMEDINDIVIDUAL).subjects();
+
+		// discard blank nodes and return indiv names (without prefix)
+		return owlIndivs.stream()
+						.filter(c -> !(c instanceof BNode))
+						.map(c -> c.stringValue().replaceFirst(base, ""))
+						.collect(Collectors.toSet());		
+	}
+
+
 	/**
 	 * Read an OWL file into and RDF model
 	 * 
@@ -328,9 +365,12 @@ public class Main {
 													throws IOException, TemplateException { 
 		SortedMap<String,String> classes = getRdf4jClasses(m, base);
 		SortedMap<String,String> props = getRdf4jProps(m, base, classes);
+		SortedMap<String,String> indivs = getRdf4jIndivs(m, base, classes, props);
 		
 		root.put("classMap", classes);
 		root.put("propMap", props);
+		root.put("indivMap", indivs);
+		
 		source(cfg, "rdf4j", root);
 	}
 
