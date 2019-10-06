@@ -50,8 +50,8 @@ import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
-import org.eclipse.rdf4j.model.BNode;
 
+import org.eclipse.rdf4j.model.BNode;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Model;
@@ -60,16 +60,19 @@ import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.vocabulary.OWL;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.RDFS;
-import org.eclipse.rdf4j.model.vocabulary.SKOS;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.rio.Rio;
 
 /**
- * Quick Vocabulary class generator for Apache Jena and Eclipse RDF4j
+ * Quick Vocabulary class generator for Eclipse RDF4j
  *
  * @author Bart.Hanssens
  */
 public class Main {
+	private static Set<Resource> owlClasses;
+	private static Set<Resource> owlProperties;
+	private static Set<Resource> owlIndivs;
+
 	/**
 	 * Option builder
 	 * 
@@ -129,44 +132,6 @@ public class Main {
 	}
 
 	/**
-	 * Capitalize and transform string to a valid constant for Jena
-	 * 
-	 * @param s name of the class / property
-	 * @return normalized string
-	 */
-	private static String jenaConstants(String s) {
-		if (s.equals("class")) {
-			return "class_prop";
-		}
-		return s.replaceFirst("^_", "")
-				.replaceAll("-", "_");
-	}
-	
-	/**
-	 * Get a set of local (without namespace) class names
-	 * 
-	 * @param m RDF Model
-	 * @param base namespace URI as string
-	 * @return set of local class names
-	 */
-	private static Set<String> getClasses(Model m, String base) {
-		Set<Resource> owlClasses = m.filter(null, RDF.TYPE, OWL.CLASS).subjects();
-		if (owlClasses.isEmpty()) {
-			owlClasses = m.filter(null, RDF.TYPE, RDFS.CLASS).subjects();
-		}
-		// check for subclasses derived from other classes in this ontology
-		owlClasses.addAll(owlClasses.stream()
-				.flatMap(s -> m.filter(null, RDF.TYPE, s).subjects().stream())
-				.collect(Collectors.toSet()));
-		
-		// discard blank nodes and return class names (without prefix)
-		return owlClasses.stream()
-						.filter(c -> !(c instanceof BNode))
-						.map(c -> c.stringValue().replaceFirst(base, ""))
-						.collect(Collectors.toSet());		
-	}
-
-	/**
 	 * Get local (without namespace) class names mapped to constants for RDF4J 
 	 * 
 	 * @param m RDF Model
@@ -219,52 +184,54 @@ public class Main {
 	}
 	
 	/**
-	 * Get local (without namespace) class names mapped to constants for Jena 
+	 * Get a set of local (without namespace) class names
 	 * 
 	 * @param m RDF Model
 	 * @param base namespace URI as string
-	 * @return map with class names and constants
+	 * @return set of local class names
 	 */
-	private static SortedMap<String,String> getJenaClasses(Model m, String base) { 
-		SortedMap<String,String> classes = new TreeMap();
-		getClasses(m, base).forEach(c -> classes.put(c, c));
-		return classes;
+	private static Set<String> getClasses(Model m, String base) {
+		owlClasses = m.filter(null, RDF.TYPE, OWL.CLASS).subjects();
+		owlClasses.addAll(m.filter(null, RDF.TYPE, RDFS.CLASS).subjects());
+System.err.println(base);
+		// discard classes outside namespace
+		owlClasses.removeIf(s -> !s.toString().startsWith(base));
+
+		// add subclasses
+		owlClasses.addAll(owlClasses.stream()
+				.flatMap(s -> m.filter(null, RDFS.SUBCLASSOF, s).subjects().stream())
+				.collect(Collectors.toSet()));
+
+		// discard named individuals
+		owlClasses.removeAll(m.filter(null, RDF.TYPE, OWL.NAMEDINDIVIDUAL).subjects());
+
+		// discard blank nodes
+		owlClasses.removeIf(c -> c instanceof BNode);
+
+		// discard blank nodes and return class names (without prefix)
+		return owlClasses.stream()
+				.map(c -> c.stringValue().replaceFirst(base, ""))
+				.collect(Collectors.toSet());		
 	}
 
 	/**
-	 * Get local (without namespace) properties mapped to constants for Jena
-	 * 
-	 * @param m RDF Model
-	 * @param base namespace URI as string
-	 * @param classes 
-	 * @return map with properties and constants
-	 */
-	private static SortedMap<String,String> getJenaProps(Model m, String base, 
-															SortedMap<String,String>  classes) { 
-		SortedMap<String,String> props = new TreeMap();
-		getProps(m, base).forEach(p -> props.put(p, jenaConstants(p)));
-		return props;
-	}
-	
-	/**
-	 * Get a set of local (without namespace) propertues
+	 * Get a set of local (without namespace) properties
 	 * 
 	 * @param m RDF Model
 	 * @param base namespace URI as string
 	 * @return set of local property names
 	 */
 	private static Set<String> getProps(Model m, String base) {
-		Set<Resource> owlProps = m.filter(null, RDF.TYPE, OWL.OBJECTPROPERTY).subjects();
-		owlProps.addAll(m.filter(null, RDF.TYPE, OWL.DATATYPEPROPERTY).subjects());
-		if (owlProps.isEmpty()) {
-			owlProps = m.filter(null, RDF.TYPE, RDF.PROPERTY).subjects();
-		}
-		// check for subproperties derived from other properties in this ontology
-		owlProps.addAll(owlProps.stream()
-				.flatMap(s -> m.filter(null, RDF.TYPE, s).subjects().stream())
+		owlProperties = m.filter(null, RDF.TYPE, OWL.OBJECTPROPERTY).subjects();
+		owlProperties.addAll(m.filter(null, RDF.TYPE, OWL.DATATYPEPROPERTY).subjects());
+		owlProperties.addAll(m.filter(null, RDF.TYPE, RDF.PROPERTY).subjects());
+
+		// add subproperties
+		owlProperties.addAll(owlProperties.stream()
+				.flatMap(s -> m.filter(null, RDFS.SUBPROPERTYOF, s).subjects().stream())
 				.collect(Collectors.toSet()));
 	
-		return owlProps.stream()
+		return owlProperties.stream()
 						.map(p -> p.stringValue().replaceFirst(base, ""))
 						.collect(Collectors.toSet());
 	}
@@ -276,11 +243,19 @@ public class Main {
 	 * @param base namespace URI as string
 	 */
 	private static Set<String> getIndivs(Model m, String base) {
-		Set<Resource> owlIndivs= m.filter(null, RDF.TYPE, OWL.NAMEDINDIVIDUAL).subjects();
+		owlIndivs = m.filter(null, RDF.TYPE, OWL.NAMEDINDIVIDUAL).subjects();
+		owlIndivs.addAll(m.filter(null, RDF.TYPE, OWL.INDIVIDUAL).subjects());
 
-		// discard blank nodes and return indiv names (without prefix)
+		// check for subclasses derived from other classes in this ontology
+		owlIndivs.addAll(owlClasses.stream()
+				.flatMap(s -> m.filter(null, RDF.TYPE, s).subjects().stream())
+				.collect(Collectors.toSet()));
+
+		// discard blank nodes
+		owlIndivs.removeIf(c -> c instanceof BNode);
+		
+		// return indiv names (without prefix)
 		return owlIndivs.stream()
-						.filter(c -> !(c instanceof BNode))
 						.map(c -> c.stringValue().replaceFirst(base, ""))
 						.collect(Collectors.toSet());		
 	}
@@ -375,26 +350,6 @@ public class Main {
 	}
 
 	/**
-	 * Write java class for Jena
-	 * 
-	 * @param cfg freemarker configuration
-	 * @param m model
-	 * @param base namespace URI as string
-	 * @param root template data
-	 * @throws IOException
-	 * @throws TemplateException
-	 */
-	private static void writeJena(Configuration cfg, Model m, String base, Map root) 
-													throws IOException, TemplateException { 
-		SortedMap<String,String> classes = getJenaClasses(m, base);
-		SortedMap<String,String> props = getJenaProps(m, base, classes);
-		
-		root.put("classMap", classes);
-		root.put("propMap", props);
-		source(cfg, "jena", root);
-	}
-	
-	/**
 	 * Main
 	 * 
 	 * @param args 
@@ -428,6 +383,5 @@ public class Main {
 		root.put("depr", deprecated);
 		
 		writeRdf4j(cfg, m, base, root);
-		writeJena(cfg, m, base, root);
 	}
 }
