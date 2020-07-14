@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2019 Eclipse RDF4J contributors, and others.
+ * Copyright (c) 2020 Eclipse RDF4J contributors, and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Distribution License v1.0
  * which accompanies this distribution, and is available at
@@ -39,48 +39,36 @@ public class ${nsAlias} {
 
 	// Classes
 	<#list classMap as class, const>
-	/** ${prefix}:${class} */
+	/** <tt>${prefix}:${class}</tt> */
 	<#if depr?seq_contains(class)>
 	@Deprecated
 	</#if>
-	public static final IRI ${const};
+	public static final IRI ${const} = create(${class});
 
 	</#list>
 
 	// Properties
 	<#list propMap as prop, const>
-	/** ${prefix}:${prop} */
+	/** <tt>${prefix}:${prop}</tt> */
 	<#if depr?seq_contains(prop)>
 	@Deprecated
 	</#if>
-	public static final IRI ${const};
+	public static final IRI ${const} = create(${prop});
 
 	</#list>
 
 	// Individuals
 	<#list indivMap as indiv, const>
-	/** ${prefix}:${indiv} */
+	/** <tt>${prefix}:${indiv}</tt> */
 	<#if depr?seq_contains(indiv)>
 	@Deprecated
 	</#if>
-	public static final IRI ${const};
+	public static final IRI ${const} = create(${indiv});
 
 	</#list>
 
-	static {
-		ValueFactory factory = SimpleValueFactory.getInstance();
-
-		<#list classMap as class, const>
-		${const} = factory.createIRI(NAMESPACE, "${class}");
-		</#list>
-
-		<#list propMap as prop, const>
-		${const} = factory.createIRI(NAMESPACE, "${prop}");
-		</#list>
-
-		<#list indivMap as indiv, const>
-		${const} = factory.createIRI(NAMESPACE, "${indiv}");
-		</#list>
+	private static IRI create(String localName) {
+		return SimpleValueFactory.getInstance().createIRI(${nsAlias}.NAMESPACE, localName);
 	}
 }
 

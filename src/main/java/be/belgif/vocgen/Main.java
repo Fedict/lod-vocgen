@@ -193,7 +193,7 @@ public class Main {
 	private static Set<String> getClasses(Model m, String base) {
 		owlClasses = m.filter(null, RDF.TYPE, OWL.CLASS).subjects();
 		owlClasses.addAll(m.filter(null, RDF.TYPE, RDFS.CLASS).subjects());
-System.err.println(base);
+
 		// discard classes outside namespace
 		owlClasses.removeIf(s -> !s.toString().startsWith(base));
 
@@ -260,6 +260,25 @@ System.err.println(base);
 						.collect(Collectors.toSet());		
 	}
 
+	/**
+	 * Get deprecated classes and properties
+	 * 
+	 * @param m model
+	 * @param base namespace URI as string
+	 * @return set of deprecated classes / properties as string
+	 */
+	private static Set<String> getDeprecated(Model m, String base) {
+		SimpleValueFactory f = SimpleValueFactory.getInstance();
+		Literal tr = f.createLiteral(true);
+	
+		Set<Resource> deprecated = m.filter(null, OWL.DEPRECATEDCLASS, tr).subjects();
+		deprecated.addAll(m.filter(null, OWL.DEPRECATEDPROPERTY, tr).subjects());
+		deprecated.addAll(m.filter(null, OWL.DEPRECATED, tr).subjects());
+		
+		return deprecated.stream()
+						.map(d -> d.stringValue().replaceFirst(base, ""))
+						.collect(Collectors.toSet());
+	}
 
 	/**
 	 * Read an OWL file into and RDF model
@@ -273,27 +292,6 @@ System.err.println(base);
 		InputStream in = new FileInputStream(file);
 		RDFFormat fmt = Rio.getParserFormatForFileName(file).orElse(RDFFormat.TURTLE);
 		return Rio.parse(in, base, fmt);	
-	}
-	
-	/**
-	 * Get deprecated classes and properties
-	 * 
-	 * @param m model
-	 * @param base namespace URI as string
-	 * @return set of deprecated classes / properties as string
-	 */
-	private static Set<String> getDeprecated(Model m, String base) {
-		SimpleValueFactory f = SimpleValueFactory.getInstance();
-		Literal tr = f.createLiteral(true);
-		IRI owl2dep = f.createIRI("http://www.w3.org/2002/07/owl#deprecated");
-		
-		Set<Resource> deprecated = m.filter(null, OWL.DEPRECATEDCLASS, tr).subjects();
-		deprecated.addAll(m.filter(null, OWL.DEPRECATEDPROPERTY, tr).subjects());
-		deprecated.addAll(m.filter(null, owl2dep, tr).subjects());
-		
-		return deprecated.stream()
-						.map(d -> d.stringValue().replaceFirst(base, ""))
-						.collect(Collectors.toSet());
 	}
 	
 	/**
