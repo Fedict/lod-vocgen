@@ -1,4 +1,7 @@
-package org.apache.jena.vocabulary;
+<#if copyright??>
+    ${copyright}
+</#if>
+package ${package};
 
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
