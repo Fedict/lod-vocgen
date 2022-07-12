@@ -30,17 +30,14 @@ import freemarker.template.Template;
 import freemarker.template.TemplateException;
 import freemarker.template.TemplateExceptionHandler;
 
-import java.io.FileInputStream;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.Writer;
-
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
-import java.util.SortedMap;
-import java.util.TreeMap;
+import java.io.*;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.*;
+import java.util.function.Function;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.apache.commons.cli.CommandLine;
@@ -52,7 +49,6 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 
 import org.eclipse.rdf4j.model.BNode;
-import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.Resource;
@@ -63,15 +59,17 @@ import org.eclipse.rdf4j.model.vocabulary.RDFS;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.rio.Rio;
 
+import static java.util.function.Function.identity;
+
 /**
  * Quick Vocabulary class generator for Eclipse RDF4j
  *
  * @author Bart.Hanssens
  */
 public class Main {
-	private static Set<Resource> owlClasses;
-	private static Set<Resource> owlProperties;
-	private static Set<Resource> owlIndivs;
+	private Set<Resource> owlClasses;
+	private Set<Resource> owlProperties;
+	private Set<Resource> owlIndivs;
 
 	/**
 	 * Option builder
@@ -91,11 +89,19 @@ public class Main {
 	private static final Options OPTS = new Options()
 			.addOption(opt("f", "file", "OWL vocabulary file in TTL format"))
 			.addOption(opt("d", "doc", "Documentation URL"))
-			.addOption(opt("a", "author", "Name of the java class author"))
+			.addOption(Option.builder("a").longOpt("author").hasArg().desc( "Name of the java class author").required(false).build())
 			.addOption(opt("n", "ns", "Namespace URL"))
 			.addOption(opt("s", "short", "Short vocabulary name"))
 			.addOption(opt("l", "long", "Long vocabulary name"))
-			.addOption(opt("p", "prefix", "Namespace prefix"));
+			.addOption(opt("p", "prefix", "Namespace prefix"))
+			.addOption(opt("t", "template", "one of: rdf4j, jena"))
+			.addOption(Option.builder("sc").longOpt("snake-case").desc("use all caps snake case constants instead of as-is local names").required(false).build())
+			.addOption(Option.builder("jp").longOpt("package").hasArg().desc( "java package").build())
+			.addOption(Option.builder("o").longOpt("output-dir").required(false).hasArg().desc( "output directory").build())
+			.addOption(Option.builder("c").longOpt("copyright").hasArg().required(false).desc("file containing the copyright snippet").build())
+			.addOption(Option.builder("cp").longOpt("searchClasspath").hasArg(false).desc("look for input files on classpath, then in filesystem").required(false).build());
+
+
 
 
 	/**
@@ -106,7 +112,9 @@ public class Main {
 	 */
 	private static Map getData(CommandLine cmd) {
 		Map m = new HashMap();
-		m.put("author", cmd.getOptionValue('a'));
+		if (cmd.hasOption("a")){
+			m.put("author", cmd.getOptionValue('a'));
+		}
 		m.put("fullname", cmd.getOptionValue('l'));
 		m.put("url", cmd.getOptionValue('d'));
 		m.put("nsAlias", cmd.getOptionValue('s'));
@@ -115,12 +123,12 @@ public class Main {
 	}
 		
 	/**
-	 * Capitalize and transform string to a valid constant for RDF4J
+	 * Capitalize and transform string to a valid constant for RDF4J, i.e. ALL_CAPS_SNAKE_CASE
 	 * 
 	 * @param s name of the class / property
 	 * @return normalized string
 	 */
-	private static String rdf4jConstants(String s) {
+	private static String snakeCase(String s) {
 		// namespace and prefix are already used in RDF4J vocabulary class
 		if (s.equals("namespace") || s.equals("prefix")) {
 			return s.toUpperCase() + "_PROP";
@@ -132,32 +140,33 @@ public class Main {
 	}
 
 	/**
-	 * Get local (without namespace) class names mapped to constants for RDF4J 
+	 * Get local (without namespace) class names mapped to constants for RDF4J , i.e. ALL_CAPS_SNAKE_CASE
 	 * 
 	 * @param m RDF Model
 	 * @param base namespace URI as string
 	 * @return map with class names and constants
 	 */
-	private static SortedMap<String,String> getRdf4jClasses(Model m, String base) { 
+	private SortedMap<String,String> getSnakeCaseClasses(Model m, String base) {
 		SortedMap<String,String> classes = new TreeMap();
-		getClasses(m, base).forEach(c -> classes.put(c, rdf4jConstants(c)));
+		getClasses(m, base).forEach(c -> classes.put(c, snakeCase(c)));
 		return classes;
 	}
 
+
 	/**
-	 * Get local (without namespace) properties mapped to constants for RDF4J 
+	 * Get local (without namespace) properties mapped to constants for RDF4J, i.e. ALL_CAPS_SNAKE_CASE
 	 * 
 	 * @param m RDF Model
 	 * @param base namespace URI as string
 	 * @param classes 
 	 * @return map with properties and constants
 	 */
-	private static SortedMap<String,String> getRdf4jProps(Model m, String base, 
-															SortedMap<String,String> classes) { 
+	private SortedMap<String,String> getSnakeCaseProps(Model m, String base,
+															Map<String,String> classes) {
 		SortedMap<String,String> props = new TreeMap();
 		// prevent duplicates when uppercasing property "name" and class "Name" to NAME
 		getProps(m, base).forEach(p -> { 
-					String cte = rdf4jConstants(p);
+					String cte = snakeCase(p);
 					String key = classes.containsValue(cte) ? cte + "_PROP" : cte;
 					props.put(p, key); 
 		});
@@ -165,18 +174,18 @@ public class Main {
 	}
 
 	/**
-	 * Get local (without namespace) individuals mapped to constants for RDF4J 
+	 * Get local (without namespace) individuals mapped to constants for RDF4J, i.e. ALL_CAPS_SNAKE_CASE.
 	 * 
 	 * @param m RDF Model
 	 * @param base namespace URI as string
 	 * @return map with individuals
 	 */
-	private static SortedMap<String,String> getRdf4jIndivs(Model m, String base,
-			SortedMap<String,String> classes, SortedMap<String,String> props) { 
-		SortedMap<String,String> indivs = new TreeMap();
+	private Map<String,String> getSnakeCaseIndivs(Model m, String base,
+			Map<String,String> classes, Map<String,String> props) {
+		Map<String,String> indivs = new TreeMap();
 		// prevent duplicates when uppercasing property "name" and class "Name" to NAME
 		getIndivs(m, base).forEach(p -> { 
-					String cte = rdf4jConstants(p);
+					String cte = snakeCase(p);
 					String key = (classes.containsValue(cte) || props.containsValue(cte)) ? cte + "_INDIV" : cte;
 					indivs.put(p, key); 
 		});
@@ -190,7 +199,7 @@ public class Main {
 	 * @param base namespace URI as string
 	 * @return set of local class names
 	 */
-	private static Set<String> getClasses(Model m, String base) {
+	private Set<String> getClasses(Model m, String base) {
 		owlClasses = m.filter(null, RDF.TYPE, OWL.CLASS).subjects();
 		owlClasses.addAll(m.filter(null, RDF.TYPE, RDFS.CLASS).subjects());
 
@@ -221,7 +230,7 @@ public class Main {
 	 * @param base namespace URI as string
 	 * @return set of local property names
 	 */
-	private static Set<String> getProps(Model m, String base) {
+	private Set<String> getProps(Model m, String base) {
 		owlProperties = m.filter(null, RDF.TYPE, OWL.OBJECTPROPERTY).subjects();
 		owlProperties.addAll(m.filter(null, RDF.TYPE, OWL.DATATYPEPROPERTY).subjects());
 		owlProperties.addAll(m.filter(null, RDF.TYPE, RDF.PROPERTY).subjects());
@@ -232,6 +241,7 @@ public class Main {
 				.collect(Collectors.toSet()));
 	
 		return owlProperties.stream()
+						.filter(p -> p.stringValue().startsWith(base)) // only use properties from the base namespace
 						.map(p -> p.stringValue().replaceFirst(base, ""))
 						.collect(Collectors.toSet());
 	}
@@ -242,7 +252,7 @@ public class Main {
 	 * @param m RDF Model
 	 * @param base namespace URI as string
 	 */
-	private static Set<String> getIndivs(Model m, String base) {
+	private Set<String> getIndivs(Model m, String base) {
 		owlIndivs = m.filter(null, RDF.TYPE, OWL.NAMEDINDIVIDUAL).subjects();
 		owlIndivs.addAll(m.filter(null, RDF.TYPE, OWL.INDIVIDUAL).subjects());
 
@@ -256,8 +266,9 @@ public class Main {
 		
 		// return indiv names (without prefix)
 		return owlIndivs.stream()
+						.filter(p -> p.stringValue().startsWith(base)) // only use individuals from the base namespace
 						.map(c -> c.stringValue().replaceFirst(base, ""))
-						.collect(Collectors.toSet());		
+						.collect(Collectors.toSet());
 	}
 
 	/**
@@ -288,7 +299,15 @@ public class Main {
 	 * @return RDF model
 	 * @throws IOException 
 	 */
-	private static Model getModel(String file, String base) throws IOException {
+	private static Model getModel(String file, String base, boolean searchForFileOnClasspath) throws IOException {
+		if (searchForFileOnClasspath) {
+			try (InputStream in = Thread.currentThread().getContextClassLoader().getResourceAsStream(file)) {
+				if (in != null) {
+					RDFFormat fmt = Rio.getParserFormatForFileName(file).orElse(RDFFormat.TURTLE);
+					return Rio.parse(in, base, fmt);
+				}
+			}
+		}
 		InputStream in = new FileInputStream(file);
 		RDFFormat fmt = Rio.getParserFormatForFileName(file).orElse(RDFFormat.TURTLE);
 		return Rio.parse(in, base, fmt);	
@@ -298,14 +317,22 @@ public class Main {
 	 * Write output for Rdf4J or Jena
 	 * 
 	 * @param cfg freemarker configuration
-	 * @param proj project: jena or rdf4j
+	 * @param template project: jena or rdf4j
 	 * @param map template data
 	 * @throws IOException
 	 * @throws TemplateException
 	 */
-	private static void source(Configuration cfg, String proj, Map map) throws IOException, TemplateException {
-		Template ftl = cfg.getTemplate(proj + ".ftl");
-		try (Writer out = new FileWriter( proj + ".java")) {
+	private static void source(Configuration cfg, TemplateType template, Map map, File outputDir) throws IOException, TemplateException {
+		Template ftl = cfg.getTemplate(template.toString().toLowerCase() + ".ftl");
+		String className = (String) map.get("nsAlias");
+		if (!outputDir.exists()) {
+			System.out.println("creating output directory " + outputDir.getAbsolutePath());
+			if (!outputDir.mkdirs()) {
+				throw new IOException("Unable to create output directory");
+			}
+		}
+		File outFile = new File(outputDir, className + ".java");
+		try (Writer out = new FileWriter(outFile)) {
 			ftl.process(map, out);
 		}
 	}
@@ -334,18 +361,49 @@ public class Main {
 	 * @throws IOException
 	 * @throws TemplateException
 	 */
-	private static void writeRdf4j(Configuration cfg, Model m, String base, Map root) 
+	private void writeVocab(Configuration cfg, Model m, String base, Map root, File outputDir, boolean snakeCase, TemplateType template)
 													throws IOException, TemplateException { 
-		SortedMap<String,String> classes = getRdf4jClasses(m, base);
-		SortedMap<String,String> props = getRdf4jProps(m, base, classes);
-		SortedMap<String,String> indivs = getRdf4jIndivs(m, base, classes, props);
+		Map<String,String> classes = snakeCase
+						? getSnakeCaseClasses(m, base)
+						: getSafeNameMap(getClasses(m, base));
+		Map<String,String> props = snakeCase
+						? getSnakeCaseProps(m, base, classes)
+						: getSafeNameMap(getProps(m, base));
+		Map<String,String> indivs = snakeCase
+						? getSnakeCaseIndivs(m, base, classes, props)
+						: getSafeNameMap(getIndivs(m, base));
 		
 		root.put("classMap", classes);
 		root.put("propMap", props);
 		root.put("indivMap", indivs);
 		
-		source(cfg, "rdf4j", root);
+		source(cfg, template, root, outputDir);
 	}
+
+	private static Map<String, String> getSafeNameMap(Set<String> localNames) {
+		return localNames.stream()
+						.collect(Collectors.toMap(identity(), Main::toSafeJavaName));
+	}
+
+	private static Pattern javaLanguageKeywords = Pattern.compile(
+		"(abstract|continue|for|new|switch|assert|default|goto|package|synchronized|boolean|do|if|private|this|"
+						+ "break|double|implements|protected|throw|byte|else|import|public|throws|case|enum|"
+						+ "instanceof|return|transient|catch|extends|int|short|try|char|final|interface|static|"
+						+ "void|class|finally|long|strictfp|volatile|const|float|native|super|while)"
+	);
+
+	private static String toSafeJavaName(String localName){
+		Matcher m = javaLanguageKeywords.matcher(localName);
+		if (m.matches()){
+			return localName + "_";
+		}
+		return localName
+						.replaceAll("^_", "")
+						.replaceAll("[+\\-~*#&%§!]", "_");
+	}
+
+
+
 
 	/**
 	 * Main
@@ -354,32 +412,66 @@ public class Main {
 	 * @throws java.io.IOException 
 	 * @throws freemarker.template.TemplateException 
 	 */
-	public static void main(String[] args) throws IOException, TemplateException {	
-		CommandLine cmd = null;
-		
+	public static void main(String[] args) throws IOException, TemplateException {
+		Main main = new Main();
 		try {
-			CommandLineParser parser = new DefaultParser();
-			cmd = parser.parse(OPTS, args);
+			main.generateVocabulary(args);
 		} catch (ParseException ex) {
-			HelpFormatter help = new HelpFormatter();
-			help.printHelp("VocabGen", OPTS);
 			System.exit(-1);
 		}
 	 
-		String owl = cmd.getOptionValue('f');
-		String base = cmd.getOptionValue('n'); // namespace URI
-		
-		Model m = getModel(owl, base);
-		
-		Set<String> deprecated = getDeprecated(m, base);
 
+	}
+
+	public void generateVocabulary(String[] args) throws ParseException, IOException, TemplateException {
+		CommandLine cmd;
+		CommandLineParser parser = new DefaultParser();
+		try {
+			cmd = parser.parse(OPTS, args);
+		} catch (ParseException e) {
+			HelpFormatter help = new HelpFormatter();
+			System.out.println(e.getMessage());
+			help.printHelp("VocabGen", OPTS);
+			throw e;
+		}
+		String ontologyFile = cmd.getOptionValue('f');
+		String base = cmd.getOptionValue('n'); // namespace URI
+		String javaPackage = Optional.ofNullable(cmd.getOptionValue("jp")).orElse("org.eclipse.rdf4j.model.vocabulary");
+		String outputDirStr = Optional.ofNullable(cmd.getOptionValue("o")).orElse(".");
+		boolean snakeCase = cmd.hasOption("sc");
+		File outputDir = new File(outputDirStr);
+		boolean searchFilesOnClasspath = cmd.hasOption("cp");
+		String copyrightFileName = cmd.getOptionValue("c");
+		String copyright = null;
+		copyright = getCopyright(copyrightFileName, copyright, searchFilesOnClasspath);
+		TemplateType template = TemplateType.valueOf(cmd.getOptionValue("t").toUpperCase());
+		Model m = getModel(ontologyFile, base, searchFilesOnClasspath);
+		Set<String> deprecated = getDeprecated(m, base);
 		// Template
 		Configuration cfg = getConfig();
-	
 		Map root = getData(cmd);
 		root.put("nsURL", base);
 		root.put("depr", deprecated);
-		
-		writeRdf4j(cfg, m, base, root);
+		root.put("package", javaPackage);
+		root.put("copyright", copyright);
+		writeVocab(cfg, m, base, root, outputDir, snakeCase, template);
+	}
+
+	private String getCopyright(String copyrightFileName, String copyright, boolean searchFilesOnClasspath) throws IOException {
+		if (copyrightFileName != null){
+			if (searchFilesOnClasspath) {
+				try (InputStream in = Thread.currentThread().getContextClassLoader().getResourceAsStream(copyrightFileName)) {
+					if (in != null) {
+						return new String(in.readAllBytes(), StandardCharsets.UTF_8);
+					}
+				}
+			}
+			return Files.readString(Path.of(copyrightFileName), StandardCharsets.UTF_8);
+		}
+		return null;
+	}
+
+	private static enum TemplateType {
+		RDF4J, JENA
 	}
 }

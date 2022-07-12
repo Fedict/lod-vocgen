@@ -1,11 +1,7 @@
-/**
- * Copyright (c) 2020 Eclipse RDF4J contributors, and others.
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the Eclipse Distribution License v1.0
- * which accompanies this distribution, and is available at
- * http://www.eclipse.org/org/documents/edl-v10.php.
- */
-package org.eclipse.rdf4j.model.vocabulary;
+<#if copyright??>
+${copyright}
+</#if>
+package ${package};
 
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Namespace;
@@ -18,8 +14,8 @@ import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
  * Constants for the ${fullname}.
  *
  * @see <a href="${url}">${fullname}</a>
- *
- * @author ${author}
+ * <#if author??>
+ *	@author ${author} </#if>
  */
 public class ${nsAlias} {
 	/**
@@ -43,7 +39,7 @@ public class ${nsAlias} {
 	<#if depr?seq_contains(class)>
 	@Deprecated
 	</#if>
-	public static final IRI ${const} = create(${class});
+	public static final IRI ${const} = create("${class}");
 
 	</#list>
 
@@ -53,7 +49,7 @@ public class ${nsAlias} {
 	<#if depr?seq_contains(prop)>
 	@Deprecated
 	</#if>
-	public static final IRI ${const} = create(${prop});
+	public static final IRI ${const} = create("${prop}");
 
 	</#list>
 
@@ -63,7 +59,7 @@ public class ${nsAlias} {
 	<#if depr?seq_contains(indiv)>
 	@Deprecated
 	</#if>
-	public static final IRI ${const} = create(${indiv});
+	public static final IRI ${const} = create("${indiv}");
 
 	</#list>
 
