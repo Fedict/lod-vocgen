@@ -17,7 +17,7 @@ Jena uses a mixture of lower/uppercase (following the case in the vocabularies).
 ## Example
 
 ```
-java -jar vocgen.jar --file <local_vocab_owl.ttl> --doc <vocab_human_doc_url>
+java -jar target/vocgen-[version]-with-dependencies.jar --file <local_vocab_owl.ttl> --doc <vocab_human_doc_url>
 	--ns <namespace_uri> --prefix <preferred_prefix>
 	--short <short_vocabulary_name> --long <long_vocabulary_name>
 	--author <name_java_author>
@@ -40,6 +40,8 @@ To include this generator in a maven toolchain, add the dependency to your pom f
         </execution>
     </executions>
     <configuration>
+        <includeProjectDependencies>false</includeProjectDependencies> <!-- unless your ontology/copyright file is in a project dependency -->
+        <includePluginDependencies>true</includePluginDependencies>    
         <mainClass>be.belgif.vocgen.Main</mainClass>
         <arguments>
             <argument>--searchClasspath</argument> <!-- if your ontology/copyright are on the classpath -->  
@@ -55,6 +57,14 @@ To include this generator in a maven toolchain, add the dependency to your pom f
             <argument>--template</argument><argument>rdf4j</argument>
         </arguments>
     </configuration>
+     <dependencies>
+        <dependency>
+            <groupId>be.belgif</groupId>
+            <artifactId>VocGen</artifactId>
+            <version>1.0.3</version>
+            <type>jar</type>
+        </dependency>
+    </dependencies>
 </plugin>
 <plugin>
     <groupId>org.codehaus.mojo</groupId>
