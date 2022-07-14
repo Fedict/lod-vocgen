@@ -261,6 +261,10 @@ public class Main {
 				.flatMap(s -> m.filter(null, RDF.TYPE, s).subjects().stream())
 				.collect(Collectors.toSet()));
 
+        // avoid duplication
+        owlIndivs.removeAll(owlClasses);
+        owlIndivs.removeAll(owlProperties);
+
 		// discard blank nodes
 		owlIndivs.removeIf(c -> c instanceof BNode);
 		
