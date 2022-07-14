@@ -21,34 +21,42 @@ public class RDF {
     }
     
     // Classes
-    public static final String Statement = NS + "Statement";
+    /** <code>Alt</code> **/
     public static final String Alt = NS + "Alt";
+    /** <code>Bag</code> **/
     public static final String Bag = NS + "Bag";
-    public static final String List = NS + "List";
-    public static final String Property = NS + "Property";
+    /** <code>CompoundLiteral</code> **/
     public static final String CompoundLiteral = NS + "CompoundLiteral";
+    /** <code>List</code> **/
+    public static final String List = NS + "List";
+    /** <code>Property</code> **/
+    public static final String Property = NS + "Property";
+    /** <code>Seq</code> **/
     public static final String Seq = NS + "Seq";
+    /** <code>Statement</code> **/
+    public static final String Statement = NS + "Statement";
 
     // Properties
-    public static final String predicate = NS + "predicate";
-    public static final String rest = NS + "rest";
-    public static final String subject = NS + "subject";
-    public static final String language = NS + "language";
-    public static final String type = NS + "type";
-    public static final String value = NS + "value";
-    public static final String first = NS + "first";
-    public static final String object = NS + "object";
+    /** <code>direction</code> **/
     public static final String direction = NS + "direction";
+    /** <code>first</code> **/
+    public static final String first = NS + "first";
+    /** <code>language</code> **/
+    public static final String language = NS + "language";
+    /** <code>object</code> **/
+    public static final String object = NS + "object";
+    /** <code>predicate</code> **/
+    public static final String predicate = NS + "predicate";
+    /** <code>rest</code> **/
+    public static final String rest = NS + "rest";
+    /** <code>subject</code> **/
+    public static final String subject = NS + "subject";
+    /** <code>type</code> **/
+    public static final String type = NS + "type";
+    /** <code>value</code> **/
+    public static final String value = NS + "value";
 
     // Individuals
+    /** <code>nil</code> **/
     public static final String nil = NS + "nil";
-    public static final String rest = NS + "rest";
-    public static final String predicate = NS + "predicate";
-    public static final String subject = NS + "subject";
-    public static final String language = NS + "language";
-    public static final String type = NS + "type";
-    public static final String value = NS + "value";
-    public static final String first = NS + "first";
-    public static final String object = NS + "object";
-    public static final String direction = NS + "direction";
 }

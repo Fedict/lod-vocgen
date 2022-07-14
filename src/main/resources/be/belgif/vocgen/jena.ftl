@@ -33,25 +33,34 @@ public class ${nsAlias} {
     
     // Classes
     <#list classMap as class, const>
+    <#if const.label??>
+    /** <code>${const.label}</code> **/
+    </#if>
     <#if depr?seq_contains(class)>
     @Deprecated
     </#if>
-    public static final Resource ${const} = m.createResource(NS + "${class}");
+    public static final Resource ${const.name} = m.createResource(NS + "${class}");
     </#list>
 
     // Properties
     <#list propMap as prop, const>
+    <#if const.label??>
+    /** <code>${const.label}</code> **/
+    </#if>
     <#if depr?seq_contains(prop)>
     @Deprecated
     </#if>
-    public static final Property ${const} = m.createProperty(NS + "${prop}");
+    public static final Property ${const.name} = m.createProperty(NS + "${prop}");
     </#list>
 
     // Individuals
     <#list indivMap as ind, const>
+    <#if const.label??>
+        /** <code>${const.label}</code> **/
+    </#if>
     <#if depr?seq_contains(ind)>
     @Deprecated
     </#if>
-    public static final Individual ${ind} = m.createProperty(NS + "${ind}");
+    public static final Individual ${const.name} = m.createProperty(NS + "${ind}");
     </#list>
 }

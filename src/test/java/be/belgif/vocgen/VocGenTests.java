@@ -150,6 +150,25 @@ public class VocGenTests {
         assertFileEqualsExpected(testName, "RDF.java");
     }
 
+    @Test
+    public void testBasic_NoLabels() throws TemplateException, ParseException, IOException {
+        String testName = "testBasic_NoLabels";
+        main.generateVocabulary(new String[] {
+                        "--searchClasspath",
+                        "--file", "src/test/resources/rdf-nolabels.ttl",
+                        "--template", "rdf4j",
+                        "--long", "The RDF vocabulary",
+                        "--short", "RDF",
+                        "--ns", "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
+                        "--prefix", "rdf",
+                        "--doc", "https://www.w3.org/TR/2014/REC-rdf11-concepts-20140225/",
+                        "--author", "The Author",
+                        "--package", "org.w3.vocab",
+                        "--output-dir", testOutputDir(testName),
+        });
+        assertFileEqualsExpected(testName, "RDF.java");
+    }
+
     private String testOutputDir(String testName) {
         return "target/test-output/" + testName;
     }

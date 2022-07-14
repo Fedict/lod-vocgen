@@ -25,25 +25,34 @@ public class ${nsAlias} {
     
     // Classes
     <#list classMap as class, const>
+    <#if const.label??>
+    /** <code>${const.label}</code> **/
+    </#if>
     <#if depr?seq_contains(class)>
     @Deprecated
     </#if>
-    public static final String ${const} = NS + "${class}";
+    public static final String ${const.name} = NS + "${class}";
     </#list>
 
     // Properties
     <#list propMap as prop, const>
+    <#if const.label??>
+    /** <code>${const.label}</code> **/
+    </#if>
     <#if depr?seq_contains(prop)>
     @Deprecated
     </#if>
-    public static final String ${const} = NS + "${prop}";
+    public static final String ${const.name} = NS + "${prop}";
     </#list>
 
     // Individuals
     <#list indivMap as ind, const>
+    <#if const.label??>
+    /** <code>${const.label}</code> **/
+    </#if>
     <#if depr?seq_contains(ind)>
     @Deprecated
     </#if>
-    public static final String ${ind} = NS + "${ind}";
+    public static final String ${const.name} = NS + "${ind}";
     </#list>
 }
