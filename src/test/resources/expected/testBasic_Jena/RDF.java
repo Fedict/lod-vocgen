@@ -1,4 +1,4 @@
-package org.apache.jena.vocabulary;
+package org.w3.vocab;
 
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;

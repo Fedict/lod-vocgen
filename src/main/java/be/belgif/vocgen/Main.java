@@ -94,7 +94,7 @@ public class Main {
 			.addOption(opt("s", "short", "Short vocabulary name"))
 			.addOption(opt("l", "long", "Long vocabulary name"))
 			.addOption(opt("p", "prefix", "Namespace prefix"))
-			.addOption(opt("t", "template", "one of: rdf4j, jena"))
+			.addOption(opt("t", "template", "one of: rdf4j, jena, plain"))
 			.addOption(Option.builder("sc").longOpt("snake-case").desc("use all caps snake case constants instead of as-is local names").required(false).build())
 			.addOption(Option.builder("jp").longOpt("package").hasArg().desc( "java package").build())
 			.addOption(Option.builder("o").longOpt("output-dir").required(false).hasArg().desc( "output directory").build())
@@ -472,6 +472,6 @@ public class Main {
 	}
 
 	private static enum TemplateType {
-		RDF4J, JENA
+		RDF4J, JENA, PLAIN
 	}
 }
