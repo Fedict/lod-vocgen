@@ -38,87 +38,60 @@ public class RDF {
 	public static final Namespace NS = new SimpleNamespace(PREFIX, NAMESPACE);
 
 	// Classes
-	/** <tt>rdf:Statement</tt> */
-	public static final IRI Statement = create("Statement");
-
-	/** <tt>rdf:Alt</tt> */
+    /** <code>Alt</code> **/
 	public static final IRI Alt = create("Alt");
 
-	/** <tt>rdf:Bag</tt> */
+    /** <code>Bag</code> **/
 	public static final IRI Bag = create("Bag");
 
-	/** <tt>rdf:List</tt> */
-	public static final IRI List = create("List");
-
-	/** <tt>rdf:Property</tt> */
-	public static final IRI Property = create("Property");
-
-	/** <tt>rdf:CompoundLiteral</tt> */
+    /** <code>CompoundLiteral</code> **/
 	public static final IRI CompoundLiteral = create("CompoundLiteral");
 
-	/** <tt>rdf:Seq</tt> */
+    /** <code>List</code> **/
+	public static final IRI List = create("List");
+
+    /** <code>Property</code> **/
+	public static final IRI Property = create("Property");
+
+    /** <code>Seq</code> **/
 	public static final IRI Seq = create("Seq");
+
+    /** <code>Statement</code> **/
+	public static final IRI Statement = create("Statement");
 
 
 	// Properties
-	/** <tt>rdf:predicate</tt> */
-	public static final IRI predicate = create("predicate");
+    /** <code>direction</code> **/
+	public static final IRI direction = create("direction");
 
-	/** <tt>rdf:rest</tt> */
-	public static final IRI rest = create("rest");
-
-	/** <tt>rdf:subject</tt> */
-	public static final IRI subject = create("subject");
-
-	/** <tt>rdf:language</tt> */
-	public static final IRI language = create("language");
-
-	/** <tt>rdf:type</tt> */
-	public static final IRI type = create("type");
-
-	/** <tt>rdf:value</tt> */
-	public static final IRI value = create("value");
-
-	/** <tt>rdf:first</tt> */
+    /** <code>first</code> **/
 	public static final IRI first = create("first");
 
-	/** <tt>rdf:object</tt> */
+    /** <code>language</code> **/
+	public static final IRI language = create("language");
+
+    /** <code>object</code> **/
 	public static final IRI object = create("object");
 
-	/** <tt>rdf:direction</tt> */
-	public static final IRI direction = create("direction");
+    /** <code>predicate</code> **/
+	public static final IRI predicate = create("predicate");
+
+    /** <code>rest</code> **/
+	public static final IRI rest = create("rest");
+
+    /** <code>subject</code> **/
+	public static final IRI subject = create("subject");
+
+    /** <code>type</code> **/
+	public static final IRI type = create("type");
+
+    /** <code>value</code> **/
+	public static final IRI value = create("value");
 
 
 	// Individuals
-	/** <tt>rdf:nil</tt> */
+    /** <code>nil</code> **/
 	public static final IRI nil = create("nil");
-
-	/** <tt>rdf:rest</tt> */
-	public static final IRI rest = create("rest");
-
-	/** <tt>rdf:predicate</tt> */
-	public static final IRI predicate = create("predicate");
-
-	/** <tt>rdf:subject</tt> */
-	public static final IRI subject = create("subject");
-
-	/** <tt>rdf:language</tt> */
-	public static final IRI language = create("language");
-
-	/** <tt>rdf:type</tt> */
-	public static final IRI type = create("type");
-
-	/** <tt>rdf:value</tt> */
-	public static final IRI value = create("value");
-
-	/** <tt>rdf:first</tt> */
-	public static final IRI first = create("first");
-
-	/** <tt>rdf:object</tt> */
-	public static final IRI object = create("object");
-
-	/** <tt>rdf:direction</tt> */
-	public static final IRI direction = create("direction");
 
 
 	private static IRI create(String localName) {

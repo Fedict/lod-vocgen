@@ -29,29 +29,8 @@ import freemarker.template.Configuration;
 import freemarker.template.Template;
 import freemarker.template.TemplateException;
 import freemarker.template.TemplateExceptionHandler;
-
-import java.io.*;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.*;
-import java.util.function.Function;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.CommandLineParser;
-import org.apache.commons.cli.DefaultParser;
-import org.apache.commons.cli.HelpFormatter;
-import org.apache.commons.cli.Option;
-import org.apache.commons.cli.Options;
-import org.apache.commons.cli.ParseException;
-
-import org.eclipse.rdf4j.model.BNode;
-import org.eclipse.rdf4j.model.Literal;
-import org.eclipse.rdf4j.model.Model;
-import org.eclipse.rdf4j.model.Resource;
+import org.apache.commons.cli.*;
+import org.eclipse.rdf4j.model.*;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.vocabulary.OWL;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
@@ -59,7 +38,16 @@ import org.eclipse.rdf4j.model.vocabulary.RDFS;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.rio.Rio;
 
-import static java.util.function.Function.identity;
+import java.io.*;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+
+import static java.util.stream.Collectors.joining;
 
 /**
  * Quick Vocabulary class generator for Eclipse RDF4j
@@ -73,7 +61,7 @@ public class Main {
 
 	/**
 	 * Option builder
-	 * 
+	 *
 	 * @param c short option name
 	 * @param s long option name
 	 * @param desc description
@@ -82,7 +70,7 @@ public class Main {
 	private static Option opt(String c, String s, String desc) {
 		return Option.builder(c).longOpt(s).required().hasArg().desc(desc).build();
 	}
-	
+
 	/**
 	 * Command line options
 	 */
@@ -94,7 +82,7 @@ public class Main {
 			.addOption(opt("s", "short", "Short vocabulary name"))
 			.addOption(opt("l", "long", "Long vocabulary name"))
 			.addOption(opt("p", "prefix", "Namespace prefix"))
-			.addOption(opt("t", "template", "one of: rdf4j, jena"))
+			.addOption(opt("t", "template", "one of: rdf4j, jena, plain"))
 			.addOption(Option.builder("sc").longOpt("snake-case").desc("use all caps snake case constants instead of as-is local names").required(false).build())
 			.addOption(Option.builder("jp").longOpt("package").hasArg().desc( "java package").build())
 			.addOption(Option.builder("o").longOpt("output-dir").required(false).hasArg().desc( "output directory").build())
@@ -106,7 +94,7 @@ public class Main {
 
 	/**
 	 * Get data for template from command line
-	 * 
+	 *
 	 * @param cmd command line
 	 * @return map with common data
 	 */
@@ -121,10 +109,10 @@ public class Main {
 		m.put("prefix", cmd.getOptionValue('p'));
 		return m;
 	}
-		
+
 	/**
 	 * Capitalize and transform string to a valid constant for RDF4J, i.e. ALL_CAPS_SNAKE_CASE
-	 * 
+	 *
 	 * @param s name of the class / property
 	 * @return normalized string
 	 */
@@ -141,65 +129,65 @@ public class Main {
 
 	/**
 	 * Get local (without namespace) class names mapped to constants for RDF4J , i.e. ALL_CAPS_SNAKE_CASE
-	 * 
+	 *
 	 * @param m RDF Model
 	 * @param base namespace URI as string
 	 * @return map with class names and constants
 	 */
-	private SortedMap<String,String> getSnakeCaseClasses(Model m, String base) {
-		SortedMap<String,String> classes = new TreeMap();
-		getClasses(m, base).forEach(c -> classes.put(c, snakeCase(c)));
+	private Map<String,Constant> getSnakeCaseClasses(Model m, String base) {
+		Map<String,Constant> classes = new TreeMap<>();
+		getClasses(m, base).forEach(c -> classes.put(c.getName(), new Constant(snakeCase(c.getName()), c.getLabel())));
 		return classes;
 	}
 
 
 	/**
 	 * Get local (without namespace) properties mapped to constants for RDF4J, i.e. ALL_CAPS_SNAKE_CASE
-	 * 
+	 *
 	 * @param m RDF Model
 	 * @param base namespace URI as string
-	 * @param classes 
+	 * @param classes
 	 * @return map with properties and constants
 	 */
-	private SortedMap<String,String> getSnakeCaseProps(Model m, String base,
-															Map<String,String> classes) {
-		SortedMap<String,String> props = new TreeMap();
+	private Map<String,Constant> getSnakeCaseProps(Model m, String base,
+															Map<String,Constant> classes) {
+		Map<String,Constant> props = new TreeMap<>();
 		// prevent duplicates when uppercasing property "name" and class "Name" to NAME
-		getProps(m, base).forEach(p -> { 
-					String cte = snakeCase(p);
+		getProps(m, base).forEach(p -> {
+					String cte = snakeCase(p.getName());
 					String key = classes.containsValue(cte) ? cte + "_PROP" : cte;
-					props.put(p, key); 
+					props.put(p.getName(), new Constant(key, p.getLabel()));
 		});
 		return props;
 	}
 
 	/**
 	 * Get local (without namespace) individuals mapped to constants for RDF4J, i.e. ALL_CAPS_SNAKE_CASE.
-	 * 
+	 *
 	 * @param m RDF Model
 	 * @param base namespace URI as string
 	 * @return map with individuals
 	 */
-	private Map<String,String> getSnakeCaseIndivs(Model m, String base,
-			Map<String,String> classes, Map<String,String> props) {
-		Map<String,String> indivs = new TreeMap();
+	private Map<String,Constant> getSnakeCaseIndivs(Model m, String base,
+			Map<String,Constant> classes, Map<String,Constant> props) {
+		Map<String,Constant> indivs = new TreeMap<>();
 		// prevent duplicates when uppercasing property "name" and class "Name" to NAME
-		getIndivs(m, base).forEach(p -> { 
-					String cte = snakeCase(p);
+		getIndivs(m, base).forEach(p -> {
+					String cte = snakeCase(p.getName());
 					String key = (classes.containsValue(cte) || props.containsValue(cte)) ? cte + "_INDIV" : cte;
-					indivs.put(p, key); 
+					indivs.put(p.getName(), new Constant(key, p.getLabel()));
 		});
 		return indivs;
 	}
-	
+
 	/**
 	 * Get a set of local (without namespace) class names
-	 * 
+	 *
 	 * @param m RDF Model
 	 * @param base namespace URI as string
 	 * @return set of local class names
 	 */
-	private Set<String> getClasses(Model m, String base) {
+	private Set<Constant> getClasses(Model m, String base) {
 		owlClasses = m.filter(null, RDF.TYPE, OWL.CLASS).subjects();
 		owlClasses.addAll(m.filter(null, RDF.TYPE, RDFS.CLASS).subjects());
 
@@ -219,18 +207,29 @@ public class Main {
 
 		// discard blank nodes and return class names (without prefix)
 		return owlClasses.stream()
-				.map(c -> c.stringValue().replaceFirst(base, ""))
-				.collect(Collectors.toSet());		
+				.map(c -> new Constant(c.stringValue().replaceFirst(base, ""), getLabel(m, c)))
+				.collect(Collectors.toSet());
+	}
+
+	private String getLabel(Model m, Resource resource) {
+		Set<Value> labels =m.filter(resource, RDFS.LABEL, null).objects();
+		if (labels.isEmpty()) {
+			return null;
+		}
+		if (labels.size() == 1) {
+			return labels.stream().map(Value::stringValue).findFirst().get();
+		}
+		return labels.stream().map(Value::stringValue).collect(joining(" or "));
 	}
 
 	/**
 	 * Get a set of local (without namespace) properties
-	 * 
+	 *
 	 * @param m RDF Model
 	 * @param base namespace URI as string
 	 * @return set of local property names
 	 */
-	private Set<String> getProps(Model m, String base) {
+	private Set<Constant> getProps(Model m, String base) {
 		owlProperties = m.filter(null, RDF.TYPE, OWL.OBJECTPROPERTY).subjects();
 		owlProperties.addAll(m.filter(null, RDF.TYPE, OWL.DATATYPEPROPERTY).subjects());
 		owlProperties.addAll(m.filter(null, RDF.TYPE, RDF.PROPERTY).subjects());
@@ -239,20 +238,20 @@ public class Main {
 		owlProperties.addAll(owlProperties.stream()
 				.flatMap(s -> m.filter(null, RDFS.SUBPROPERTYOF, s).subjects().stream())
 				.collect(Collectors.toSet()));
-	
+
 		return owlProperties.stream()
 						.filter(p -> p.stringValue().startsWith(base)) // only use properties from the base namespace
-						.map(p -> p.stringValue().replaceFirst(base, ""))
+						.map(c -> new Constant(c.stringValue().replaceFirst(base, ""), getLabel(m, c)))
 						.collect(Collectors.toSet());
 	}
 
 	/**
 	 * Get a set of individuals (without namespace)
-	 * 
+	 *
 	 * @param m RDF Model
 	 * @param base namespace URI as string
 	 */
-	private Set<String> getIndivs(Model m, String base) {
+	private Set<Constant> getIndivs(Model m, String base) {
 		owlIndivs = m.filter(null, RDF.TYPE, OWL.NAMEDINDIVIDUAL).subjects();
 		owlIndivs.addAll(m.filter(null, RDF.TYPE, OWL.INDIVIDUAL).subjects());
 
@@ -261,19 +260,23 @@ public class Main {
 				.flatMap(s -> m.filter(null, RDF.TYPE, s).subjects().stream())
 				.collect(Collectors.toSet()));
 
+        // avoid duplication
+        owlIndivs.removeAll(owlClasses);
+        owlIndivs.removeAll(owlProperties);
+
 		// discard blank nodes
 		owlIndivs.removeIf(c -> c instanceof BNode);
-		
+
 		// return indiv names (without prefix)
 		return owlIndivs.stream()
 						.filter(p -> p.stringValue().startsWith(base)) // only use individuals from the base namespace
-						.map(c -> c.stringValue().replaceFirst(base, ""))
+						.map(c -> new Constant(c.stringValue().replaceFirst(base, ""), getLabel(m, c)))
 						.collect(Collectors.toSet());
 	}
 
 	/**
 	 * Get deprecated classes and properties
-	 * 
+	 *
 	 * @param m model
 	 * @param base namespace URI as string
 	 * @return set of deprecated classes / properties as string
@@ -281,11 +284,11 @@ public class Main {
 	private static Set<String> getDeprecated(Model m, String base) {
 		SimpleValueFactory f = SimpleValueFactory.getInstance();
 		Literal tr = f.createLiteral(true);
-	
+
 		Set<Resource> deprecated = m.filter(null, OWL.DEPRECATEDCLASS, tr).subjects();
 		deprecated.addAll(m.filter(null, OWL.DEPRECATEDPROPERTY, tr).subjects());
 		deprecated.addAll(m.filter(null, OWL.DEPRECATED, tr).subjects());
-		
+
 		return deprecated.stream()
 						.map(d -> d.stringValue().replaceFirst(base, ""))
 						.collect(Collectors.toSet());
@@ -293,11 +296,11 @@ public class Main {
 
 	/**
 	 * Read an OWL file into and RDF model
-	 * 
+	 *
 	 * @param file input file
 	 * @param base namespace URI
 	 * @return RDF model
-	 * @throws IOException 
+	 * @throws IOException
 	 */
 	private static Model getModel(String file, String base, boolean searchForFileOnClasspath) throws IOException {
 		if (searchForFileOnClasspath) {
@@ -310,12 +313,12 @@ public class Main {
 		}
 		InputStream in = new FileInputStream(file);
 		RDFFormat fmt = Rio.getParserFormatForFileName(file).orElse(RDFFormat.TURTLE);
-		return Rio.parse(in, base, fmt);	
+		return Rio.parse(in, base, fmt);
 	}
-	
+
 	/**
 	 * Write output for Rdf4J or Jena
-	 * 
+	 *
 	 * @param cfg freemarker configuration
 	 * @param template project: jena or rdf4j
 	 * @param map template data
@@ -336,24 +339,24 @@ public class Main {
 			ftl.process(map, out);
 		}
 	}
-	
+
 	/**
 	 * Get Freemarker configuration.
-	 * 
-	 * @return freemarker configuration 
+	 *
+	 * @return freemarker configuration
 	 */
 	private static Configuration getConfig() {
 		Configuration cfg = new Configuration(Configuration.VERSION_2_3_25);
 		cfg.setClassLoaderForTemplateLoading(Main.class.getClassLoader(), "be/belgif/vocgen");
 		cfg.setDefaultEncoding("UTF-8");
         cfg.setTemplateExceptionHandler(TemplateExceptionHandler.RETHROW_HANDLER);
-		
+
 		return cfg;
 	}
-	
+
 	/**
 	 * Write java class for RDF4J
-	 * 
+	 *
 	 * @param cfg freemarker configuration
 	 * @param m model
 	 * @param base namespace URI as string
@@ -362,27 +365,41 @@ public class Main {
 	 * @throws TemplateException
 	 */
 	private void writeVocab(Configuration cfg, Model m, String base, Map root, File outputDir, boolean snakeCase, TemplateType template)
-													throws IOException, TemplateException { 
-		Map<String,String> classes = snakeCase
+													throws IOException, TemplateException {
+		Map<String,Constant> classes = snakeCase
 						? getSnakeCaseClasses(m, base)
 						: getSafeNameMap(getClasses(m, base));
-		Map<String,String> props = snakeCase
+		Map<String,Constant> props = snakeCase
 						? getSnakeCaseProps(m, base, classes)
 						: getSafeNameMap(getProps(m, base));
-		Map<String,String> indivs = snakeCase
+		Map<String,Constant> indivs = snakeCase
 						? getSnakeCaseIndivs(m, base, classes, props)
 						: getSafeNameMap(getIndivs(m, base));
-		
+
+		setDefaultLabelsIfMissing(classes, (String) root.get("prefix"));
+		setDefaultLabelsIfMissing(props, (String) root.get("prefix"));
+		setDefaultLabelsIfMissing(indivs, (String) root.get("prefix"));
+
 		root.put("classMap", classes);
 		root.put("propMap", props);
 		root.put("indivMap", indivs);
-		
+
 		source(cfg, template, root, outputDir);
 	}
 
-	private static Map<String, String> getSafeNameMap(Set<String> localNames) {
-		return localNames.stream()
-						.collect(Collectors.toMap(identity(), Main::toSafeJavaName));
+	private void setDefaultLabelsIfMissing(Map<String, Constant> constantMap, String nsPrefix) {
+		constantMap.values()
+						.stream()
+						.forEach(c -> {
+							if (c.getLabel() == null) {
+								c.setLabel(nsPrefix + ":" + c.getName());
+							}
+						});
+	}
+
+	private static Map<String, Constant> getSafeNameMap(Set<Constant> localNames) {
+		return new TreeMap<>(localNames.stream()
+						.collect(Collectors.toMap(c -> c.getName(), c -> new Constant(toSafeJavaName(c.getName()), c.getLabel()))));
 	}
 
 	private static Pattern javaLanguageKeywords = Pattern.compile(
@@ -407,10 +424,10 @@ public class Main {
 
 	/**
 	 * Main
-	 * 
-	 * @param args 
-	 * @throws java.io.IOException 
-	 * @throws freemarker.template.TemplateException 
+	 *
+	 * @param args
+	 * @throws java.io.IOException
+	 * @throws freemarker.template.TemplateException
 	 */
 	public static void main(String[] args) throws IOException, TemplateException {
 		Main main = new Main();
@@ -419,7 +436,7 @@ public class Main {
 		} catch (ParseException ex) {
 			System.exit(-1);
 		}
-	 
+
 
 	}
 
@@ -472,6 +489,6 @@ public class Main {
 	}
 
 	private static enum TemplateType {
-		RDF4J, JENA
+		RDF4J, JENA, PLAIN
 	}
 }
