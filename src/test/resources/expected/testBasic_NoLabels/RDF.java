@@ -1,10 +1,3 @@
-/**
- * Copyright (c) 2020 Eclipse RDF4J contributors, and others.
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the Eclipse Distribution License v1.0
- * which accompanies this distribution, and is available at
- * http://www.eclipse.org/org/documents/edl-v10.php.
- */
 package org.w3.vocab;
 
 import org.eclipse.rdf4j.model.IRI;
@@ -38,59 +31,59 @@ public class RDF {
 	public static final Namespace NS = new SimpleNamespace(PREFIX, NAMESPACE);
 
 	// Classes
-    /** <code>Alt</code> **/
+    /** <code>rdf:Alt</code> **/
 	public static final IRI Alt = create("Alt");
 
-    /** <code>Bag</code> **/
+    /** <code>rdf:Bag</code> **/
 	public static final IRI Bag = create("Bag");
 
-    /** <code>CompoundLiteral</code> **/
+    /** <code>rdf:CompoundLiteral</code> **/
 	public static final IRI CompoundLiteral = create("CompoundLiteral");
 
-    /** <code>List</code> **/
+    /** <code>rdf:List</code> **/
 	public static final IRI List = create("List");
 
-    /** <code>Property</code> **/
+    /** <code>rdf:Property</code> **/
 	public static final IRI Property = create("Property");
 
-    /** <code>Seq</code> **/
+    /** <code>rdf:Seq</code> **/
 	public static final IRI Seq = create("Seq");
 
-    /** <code>Statement</code> **/
+    /** <code>rdf:Statement</code> **/
 	public static final IRI Statement = create("Statement");
 
 
 	// Properties
-    /** <code>direction</code> **/
+    /** <code>rdf:direction</code> **/
 	public static final IRI direction = create("direction");
 
-    /** <code>first</code> **/
+    /** <code>rdf:first</code> **/
 	public static final IRI first = create("first");
 
-    /** <code>language</code> **/
+    /** <code>rdf:language</code> **/
 	public static final IRI language = create("language");
 
-    /** <code>object</code> **/
+    /** <code>rdf:object</code> **/
 	public static final IRI object = create("object");
 
-    /** <code>predicate</code> **/
+    /** <code>rdf:predicate</code> **/
 	public static final IRI predicate = create("predicate");
 
-    /** <code>rest</code> **/
+    /** <code>rdf:rest</code> **/
 	public static final IRI rest = create("rest");
 
-    /** <code>subject</code> **/
+    /** <code>rdf:subject</code> **/
 	public static final IRI subject = create("subject");
 
-    /** <code>type</code> **/
+    /** <code>rdf:type</code> **/
 	public static final IRI type = create("type");
 
-    /** <code>value</code> **/
+    /** <code>rdf:value</code> **/
 	public static final IRI value = create("value");
 
 
 	// Individuals
-    /** <code>nil</code> **/
+    /** <code>rdf:nil</code> **/
 	public static final IRI nil = create("nil");
 
 

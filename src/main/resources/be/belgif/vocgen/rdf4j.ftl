@@ -35,31 +35,37 @@ public class ${nsAlias} {
 
 	// Classes
 	<#list classMap as class, const>
-	/** <tt>${prefix}:${class}</tt> */
+    <#if const.label??>
+    /** <code>${const.label}</code> **/
+    </#if>
 	<#if depr?seq_contains(class)>
 	@Deprecated
 	</#if>
-	public static final IRI ${const} = create("${class}");
+	public static final IRI ${const.name} = create("${class}");
 
 	</#list>
 
 	// Properties
 	<#list propMap as prop, const>
-	/** <tt>${prefix}:${prop}</tt> */
+    <#if const.label??>
+    /** <code>${const.label}</code> **/
+    </#if>
 	<#if depr?seq_contains(prop)>
 	@Deprecated
 	</#if>
-	public static final IRI ${const} = create("${prop}");
+	public static final IRI ${const.name} = create("${prop}");
 
 	</#list>
 
 	// Individuals
 	<#list indivMap as indiv, const>
-	/** <tt>${prefix}:${indiv}</tt> */
+    <#if const.label??>
+    /** <code>${const.label}</code> **/
+    </#if>
 	<#if depr?seq_contains(indiv)>
 	@Deprecated
 	</#if>
-	public static final IRI ${const} = create("${indiv}");
+	public static final IRI ${const.name} = create("${indiv}");
 
 	</#list>
 

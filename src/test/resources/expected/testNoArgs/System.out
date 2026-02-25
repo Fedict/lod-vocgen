@@ -1,0 +1,17 @@
+Missing required options: f, d, n, s, l, p, t
+usage: VocabGen
+ -a,--author <arg>       Name of the java class author
+ -c,--copyright <arg>    file containing the copyright snippet
+ -cp,--searchClasspath   look for input files on classpath, then in
+                         filesystem
+ -d,--doc <arg>          Documentation URL
+ -f,--file <arg>         OWL vocabulary file in TTL format
+ -jp,--package <arg>     java package
+ -l,--long <arg>         Long vocabulary name
+ -n,--ns <arg>           Namespace URL
+ -o,--output-dir <arg>   output directory
+ -p,--prefix <arg>       Namespace prefix
+ -s,--short <arg>        Short vocabulary name
+ -sc,--snake-case        use all caps snake case constants instead of
+                         as-is local names
+ -t,--template <arg>     one of: rdf4j, jena, plain
